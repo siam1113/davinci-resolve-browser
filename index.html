@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Editor</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        body{
+            width: 50%;
+            height: 50vh;
+            margin: auto;
+        }
+        /*
+        * Top Panel
+        */
+        #panel-top{
+            display: flex;
+            width: 100%;
+            margin: auto;
+            padding: 0 1rem 0 1rem;
+            border: 1px solid gray;
+        }
+        /*
+        * Media Import
+        */
+        #media-import{
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            width: 1000px;
+            border-right: 1px solid grey;
+            margin: 0.5rem;
+            overflow: scroll;
+        }
+
+        #media-import .imported-media{
+            width: 200px;
+            height: 200px;
+            padding: 1rem;
+            object-fit: contain;
+        }
+
+        /*
+        * Source Viewer
+        */
+        #source-viewer{
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        #viewport{
+            margin: auto;
+            padding: 1rem;
+        }    
+        /*
+        * Media
+        */
+        #media{
+            display: grid;
+            justify-content: center;
+        }
+
+        #media-img, #media-video{
+            max-width: 400px;
+            max-width: 400px;
+            display: none;
+        }
+
+        #media-video {
+            display: block;
+            width: 100%;
+        }
+
+        #video-control-panel {
+            display: none;
+            position: relative;
+            transition: 1s;
+        }
+
+        #video-controls{
+            display: flex;
+            justify-content: center;
+            height: 3px;
+            background-color: white;
+            border-radius: 5px;
+            transition: 1s;
+        }
+
+        #video-controls span{
+            cursor: pointer;
+            font-size: 1.3rem;
+        }
+
+        #video-progress-line{
+            height: 5px;
+            background-color: black;
+            border-radius: 5px;
+            transition: 1s;
+        }
+
+        #video-progress{
+            background-color: gray;
+            height: 100%;
+            width: 0%;
+        }
+
+        /*
+        * Color Control
+        */
+        #color-controls{
+            padding: 5rem;
+            display: grid;
+            width: 100%;
+            border: 1px solid gray;
+        }
+
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 0rem 0.3rem 0rem 0.3rem;
+        }
+
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; padding: 3rem;">Color Page</h1>
+    <div id="panel-top">
+        <div id="media-import">
+            <img class="imported-media" src="forest.jpg" alt="source media"/>
+            <img class="imported-media" src="lion.jpg" alt="source media"/>
+            <video class="imported-media" src="walk.mp4"></video>
+            <video class="imported-media" src="flower.mp4"></video>
+        </div>
+
+        <div id="source-viewer">
+            <div id="media">
+                <img id="media-img"/>
+                <video id="media-video"></video>
+            </div>
+            <div id="video-control-panel">
+                <div id="video-progress-line">
+                <div id="video-progress"></div>
+                </div>
+        
+                <span id="video-progress-time"></span>
+                <div id="video-controls">
+                    <span id="video-backwardBtn">⏪</span>
+                    <span id="video-playBtn">▶️</span>
+                    <span id="video-forwardBtn">⏩</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form id="color-controls">
+        <!-- Brightness: Makes Light regions lighter -->
+        <div class="meta-info">
+            <label for="brightness">Brightness</label>
+            <span id="brightness-level">100%</span>
+        </div>
+        <input type="range" step="1" min="0" max="500" value="100" id="brightness" name="brightness"/>
+
+        <!-- Saturation: Intensity of the color -->
+        <div class="meta-info">
+            <label for="saturation">Saturation</label>
+            <span id="saturation-level">100%</span>
+        </div>
+        <input type="range" step="1" min="0" max="500" value="100" id="saturation" name="saturation"/>
+
+        <!-- Contrast: Intensity of the color -->
+        <div class="meta-info">
+            <label for="contrast">Contrast</label>
+            <span id="contrast-level">100%</span>
+        </div>
+        <input type="range" step="1" min="0" max="500" value="100" id="contrast" name="contrast"/>
+
+        <input type="reset" id="reset-filter" hidden>
+    </form>
+    <script>
+        /*
+        * =========
+        * Selectors
+        * =========
+        */
+        const media = document.getElementById("media");
+        const importedMedia = document.getElementsByClassName("imported-media");
+        const mediaVideo = document.getElementById("media-video");
+        const mediaImg = document.getElementById("media-img");
+        /*
+        * ------------
+        * Video Player
+        * ------------
+        */
+        const videoControlPanel = document.getElementById("video-control-panel");
+        const playBtn = document.getElementById("video-playBtn");
+        const forwardBtn = document.getElementById("video-forwardBtn");
+        const backwardBtn = document.getElementById("video-backwardBtn");
+        const videoProgressBar = document.getElementById("video-progress");
+        const progressTime = document.getElementById("video-progress-time");
+
+        /*
+        * --------------
+        * Color Controls
+        * --------------
+        */
+        const resetFilterBtn = document.getElementById("reset-filter");
+        const brightness = document.getElementById("brightness")
+        const saturation = document.getElementById("saturation");
+        const contrast = document.getElementById("contrast");
+
+        /*
+        * ==============
+        * Data Variables
+        * ==============
+        */
+
+        /*
+        * -----------
+        * Media Types
+        * -----------
+        */
+        const mediaTypes = {
+            video: ['.mp4', '.mov'],
+            image: ['.png', '.jpg']
+        }
+
+        /*
+        * --------------
+        * Color Controls
+        * --------------
+        */
+        var brightnessLevel = 100;
+        var saturationLevel = 100;
+        var contrastLevel = 100;
+
+        /*
+        * =========
+        * Functions
+        * =========
+        */  
+        /*
+        * --------------
+        * Color Controls
+        * --------------
+        */
+        const setFilter = () => {
+            media.style.filter = `brightness(${brightnessLevel}%) saturate(${saturationLevel}%) contrast(${contrastLevel}%)`;
+        }
+
+        const resetFilter = () => {
+            resetFilterBtn.click()
+            document.getElementById("brightness-level").innerText = `100%`;
+            document.getElementById("saturation-level").innerText = `100%`;
+            document.getElementById("contrast-level").innerText = `100%`;
+            media.style.filter = `brightness(100%) saturate(100%) contrast(100%)`;
+        }
+
+        const updateMediaVideoProgress = (currentTime, duration) => {
+            const progressPercentage = Math.round((currentTime * 100) / duration);
+            videoProgressBar.style.width = `${progressPercentage}%`;
+            progressTime.innerText = `${Math.round(currentTime)}s / ${Math.round(duration)}s`;
+        }
+
+        /*
+        * ==============
+        * Event Handlers
+        * ==============
+        */
+        /*
+        * --------------
+        * Imported Media
+        * --------------
+        */
+        const totalImportedMedia = importedMedia.length;
+        for(let i = 0; i < totalImportedMedia; i ++){
+        importedMedia[i].addEventListener('mouseover', (event) => {
+            const targetSrc = event.target.src;
+            if(mediaTypes.video.some(format => targetSrc.endsWith(format))){
+                event.target.play()
+            }
+        })
+
+        importedMedia[i].addEventListener('mouseout', (event) => {
+            const targetSrc = event.target.src;
+            if(mediaTypes.video.some(format => targetSrc.endsWith(format))){
+                event.target.currentTime = '0';
+                event.target.pause()
+            }
+        })
+
+        importedMedia[i].addEventListener('dblclick', (event) => {
+            resetFilter()
+            const targetSrc = event.target.src;
+            if(mediaTypes.video.some(format => targetSrc.endsWith(format))){
+                mediaVideo.style.display = "block";
+                videoControlPanel.style.display = "grid";
+                mediaImg.style.display = "none";
+                mediaVideo.src = targetSrc;
+                updateMediaVideoProgress(0, event.target.duration);
+                mediaVideo.play()
+                playBtn.innerText = "⏸️";
+            }
+
+            if(mediaTypes.image.some(format => targetSrc.endsWith(format))){
+                mediaVideo.style.display = "none";
+                videoControlPanel.style.display = "none";
+                mediaImg.style.display = "block";
+                mediaImg.src = targetSrc;
+            }
+        })
+
+        }
+
+        /*
+        * --------------
+        * Color Controls
+        * --------------
+        */
+        // Brightness Controller
+        brightness.addEventListener('input', (event) => {
+            brightnessLevel = event.target.value;
+            document.getElementById("brightness-level").innerText = `${brightnessLevel}%`
+            setFilter()
+        })
+
+        // Saturation Controller
+        saturation.addEventListener('input', (event) => {
+            saturationLevel = event.target.value;
+            document.getElementById("saturation-level").innerText = `${saturationLevel}%`
+            setFilter()
+        })
+
+        // Contrast Controller
+        contrast.addEventListener('input', (event) => {
+            contrastLevel = event.target.value;
+            document.getElementById("contrast-level").innerText = `${contrastLevel}%`
+            setFilter()
+        })
+        /*
+        * ------------
+        * Video Player
+        * ------------
+        */
+        // Play Video
+        playBtn.addEventListener('click', () => {
+            const isPaused = mediaVideo.paused;
+            if (isPaused) {
+                mediaVideo.play();
+                playBtn.innerText = "⏸️";
+            } else {
+                mediaVideo.pause();
+                playBtn.innerText = "▶️";
+            }
+        })
+
+        // Forward by 3s
+        forwardBtn.addEventListener('click', () => {
+            if((mediaVideo.duration - mediaVideo.currentTime) > 1){
+                mediaVideo.currentTime += 3;
+            }else{
+                mediaVideo.currentTime = mediaVideo.duration;
+            }      
+        })
+
+        // Backward by 3s
+        backwardBtn.addEventListener('click', () => {
+            mediaVideo.currentTime -= 3;
+        })
+
+        // Update Progress
+        mediaVideo.addEventListener("timeupdate", (event) => {
+            const currentTime = event.target.currentTime;
+            if(currentTime > 0){
+                const duration =  event.target.duration;
+                updateMediaVideoProgress(currentTime, duration);
+            }
+        })
+
+        // Video End
+        mediaVideo.onended = () => {
+            mediaVideo.pause();
+            playBtn.innerText = "▶️";
+        }
+
+    </script>
+</body>
+</html>
