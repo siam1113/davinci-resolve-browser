@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixels</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        
+        div, input {
+            width: 20px;
+            height: 20px;
+            border: 1px solid gray;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        for(let i = 0; i < 10000; i++){
+            const div = document.createElement("div");
+            const colorInput = document.createElement("input");
+            colorInput.type = "color";
+            colorInput.style.opacity = "0"
+            if(i % 10 == 0 ){
+                div.style.background = "red"
+            }else{
+                div.style.background = "azure"
+            }
+
+            if(i % 20 == 0 ){
+                div.style.background = "green"
+            }
+
+            if(i % 30 == 0 ){
+                div.style.background = "blue"
+            }
+
+            if(i % 40 == 0 ){
+                div.style.background = "orange"
+            }
+
+            if(i % 3 == 0 ){
+                div.style.background = "green"
+            }
+
+            if(i % 7 == 0 ){
+                div.style.background = "teal"
+            }
+            div.appendChild(colorInput)
+            document.body.append(div)
+        }
+
+        const div = document.getElementsByTagName("div");
+        const colorInput = document.getElementsByTagName("input");
+        for(let i = 0; i < 10000; i++){
+            colorInput[i].addEventListener("input", (e) => {
+                console.log(e.target.value)
+                div[i].style.background = e.target.value;
+            })
+        }
+    </script>
+</body>
+</html>
